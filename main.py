@@ -17,12 +17,9 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
-BROWN = (101, 67, 33)
-DARK_GREEN = (1, 68, 33)
-TREE_GREEN = (1, 88, 33)
 
 # Player settings
-PLAYER_WIDTH = 50
+PLAYER_WIDTH = 40
 PLAYER_HEIGHT = 80
 PLAYER_SPEED = 5
 JUMP_FORCE = -15
@@ -31,22 +28,6 @@ GRAVITY = 0.8
 # Projectile settings
 PROJECTILE_SPEED = 15
 PROJECTILE_SIZE = 5
-
-# Load tree images
-TREE_IMAGES = [
-    pygame.image.load(os.path.join("images", "tree-1.png")),
-    pygame.image.load(os.path.join("images", "tree-2.png")),
-    pygame.image.load(os.path.join("images", "tree-3.png"))
-]
-
-def create_tree_sprite():
-    # Select a random tree image
-    tree_image = random.choice(TREE_IMAGES)
-
-    # Resize the image to 60x100 pixels
-    tree = pygame.transform.scale(tree_image, (60, 100))
-
-    return tree
 
 # Sound effects
 class GameSounds:
@@ -59,7 +40,7 @@ class GameSounds:
         # Set volume
         self.fire.set_volume(0.3)
         self.reload.set_volume(0.4)
-        self.thump.set_volume(0.4)
+        self.thump.set_volume(1.2)
     
     def play_fire(self):
         self.fire.stop()  # Stop any currently playing fire sound
@@ -184,14 +165,32 @@ class Game:
         self.running = True
         self.background_x = 0
         
-        # Create tree sprite
-        self.tree_sprite = create_tree_sprite()
+        # Load images
+        self.sun = pygame.image.load('images/sun.png')
+        self.sun = pygame.transform.scale(self.sun, (100, 100))
+        self.trees = [
+            pygame.image.load('images/tree-1.png'),
+            pygame.image.load('images/tree-2.png'),
+            pygame.image.load('images/tree-3.png')
+        ]
+        
+        # Position sun in top right corner
+        self.sun_rect = self.sun.get_rect()
+        self.sun_rect.topright = (WINDOW_WIDTH - 20, 20)
+        
+        # Store tree positions and variants
+        self.tree_positions = []
+        for i in range(-1, WINDOW_WIDTH // 100 + 2):
+            self.tree_positions.append({
+                'x': i * 100,
+                'variant': random.randint(0, 2)
+            })
         
         # Initialize sounds
         self.sounds = GameSounds()
 
         # Create sprites
-        self.player = Player(WINDOW_WIDTH // 4, WINDOW_HEIGHT - 130)
+        self.player = Player(WINDOW_WIDTH // 4, WINDOW_HEIGHT - 80)
         self.gun = Gun()
         
         # Create sprite groups
@@ -248,10 +247,16 @@ class Game:
             self.player.rect.x -= PLAYER_SPEED
             self.player.direction = "left"
             self.background_x += 1
+            # Update tree positions
+            for tree in self.tree_positions:
+                tree['x'] += 1
         if keys[pygame.K_d]:
             self.player.rect.x += PLAYER_SPEED
             self.player.direction = "right"
             self.background_x -= 1
+            # Update tree positions
+            for tree in self.tree_positions:
+                tree['x'] -= 1
 
         # Keep player in bounds
         if self.player.rect.left < 0:
@@ -265,19 +270,39 @@ class Game:
         # Update gun position to follow player
         self.gun.rect.centerx = self.player.rect.centerx
         self.gun.rect.centery = self.player.rect.centery
+        
+        # Add new trees as needed
+        while self.tree_positions[0]['x'] + 100 < 0:
+            self.tree_positions.pop(0)
+            new_x = self.tree_positions[-1]['x'] + 100
+            self.tree_positions.append({
+                'x': new_x,
+                'variant': random.randint(0, 2)
+            })
+        while self.tree_positions[-1]['x'] > WINDOW_WIDTH:
+            self.tree_positions.pop()
+            new_x = self.tree_positions[0]['x'] - 100
+            self.tree_positions.insert(0, {
+                'x': new_x,
+                'variant': random.randint(0, 2)
+            })
 
     def draw(self):
         self.screen.fill((100, 100, 255))  # Sky blue background
+        
+        # Draw sun (fixed position)
+        self.screen.blit(self.sun, self.sun_rect)
 
         # Draw scrolling ground
         ground_color = (50, 150, 50)  # Green ground
         pygame.draw.rect(self.screen, ground_color, 
-                        (0, WINDOW_HEIGHT - 50, WINDOW_WIDTH, 50))
+                        (0, WINDOW_HEIGHT - 55, WINDOW_WIDTH, 50))
 
-        # Draw scrolling trees in background
-        for i in range(-1, WINDOW_WIDTH // 100 + 2):
-            x_pos = (i * 100 + self.background_x) % WINDOW_WIDTH
-            self.screen.blit(self.tree_sprite, (x_pos, WINDOW_HEIGHT - 150))
+        # Draw trees with different variants
+        for tree in self.tree_positions:
+            x = tree['x']
+            variant = tree['variant']
+            self.screen.blit(self.trees[variant], (x, WINDOW_HEIGHT - 180))
 
         self.all_sprites.draw(self.screen)
 
