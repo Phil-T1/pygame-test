@@ -1,8 +1,10 @@
 import pygame
 import math
+import os
 
-# Initialize Pygame
+# Initialize Pygame and its mixer
 pygame.init()
+pygame.mixer.init()
 
 # Constants
 WINDOW_WIDTH = 800
@@ -26,14 +28,32 @@ GRAVITY = 0.8
 PROJECTILE_SPEED = 15
 PROJECTILE_SIZE = 5
 
+# Create sounds directory if it doesn't exist
+if not os.path.exists('sounds'):
+    os.makedirs('sounds')
+
+# Sound effects
+class GameSounds:
+    def __init__(self):
+        # Load sound effects
+        self.fire = pygame.mixer.Sound('sounds/fire.mp3')
+        self.reload = pygame.mixer.Sound('sounds/reload.mp3')
+        self.thump = pygame.mixer.Sound('sounds/thump.mp3')
+        
+        # Set volume
+        self.fire.set_volume(0.3)
+        self.reload.set_volume(0.4)
+        self.thump.set_volume(0.4)
+
 class Projectile(pygame.sprite.Sprite):
-    def __init__(self, x, y, target_x, target_y):
+    def __init__(self, x, y, target_x, target_y, sounds):
         super().__init__()
         self.image = pygame.Surface([PROJECTILE_SIZE, PROJECTILE_SIZE])
         self.image.fill(YELLOW)
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
+        self.sounds = sounds
         
         # Calculate direction vector
         dx = target_x - x
@@ -45,17 +65,27 @@ class Projectile(pygame.sprite.Sprite):
         # Store position as float for precise movement
         self.float_x = float(x)
         self.float_y = float(y)
+        
+        # Track previous position for ground collision
+        self.prev_y = y
 
     def update(self):
+        # Store previous position
+        self.prev_y = self.rect.bottom
+        
         # Update position using float values for smooth movement
         self.float_x += self.velocity_x
         self.float_y += self.velocity_y
         self.rect.x = int(self.float_x)
         self.rect.y = int(self.float_y)
         
-        # Remove if out of bounds or hits ground
-        if (self.rect.right < 0 or self.rect.left > WINDOW_WIDTH or 
-            self.rect.bottom < 0 or self.rect.bottom > WINDOW_HEIGHT - 50):
+        # Check for ground collision
+        if self.rect.bottom >= WINDOW_HEIGHT - 50 and self.prev_y < WINDOW_HEIGHT - 50:
+            self.sounds.thump.play()
+            self.kill()
+        # Check for other boundaries
+        elif (self.rect.right < 0 or self.rect.left > WINDOW_WIDTH or 
+              self.rect.bottom < 0):
             self.kill()
 
 class Player(pygame.sprite.Sprite):
@@ -118,6 +148,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.background_x = 0
+        
+        # Initialize sounds
+        self.sounds = GameSounds()
 
         # Create sprites
         self.player = Player(WINDOW_WIDTH // 4, WINDOW_HEIGHT - 130)
@@ -160,12 +193,14 @@ class Game:
             self.gun.ammo -= 1
             mouse_x, mouse_y = pygame.mouse.get_pos()
             projectile = Projectile(self.gun.rect.centerx, self.gun.rect.centery, 
-                                  mouse_x, mouse_y)
+                                  mouse_x, mouse_y, self.sounds)
             self.projectiles.add(projectile)
             self.all_sprites.add(projectile)
+            self.sounds.fire.play()
 
     def reload(self):
         self.gun.ammo = self.gun.max_ammo
+        self.sounds.reload.play()
 
     def update(self):
         keys = pygame.key.get_pressed()
