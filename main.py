@@ -13,6 +13,7 @@ FPS = 60
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 
 # Player settings
 PLAYER_WIDTH = 50
@@ -20,6 +21,42 @@ PLAYER_HEIGHT = 80
 PLAYER_SPEED = 5
 JUMP_FORCE = -15
 GRAVITY = 0.8
+
+# Projectile settings
+PROJECTILE_SPEED = 15
+PROJECTILE_SIZE = 5
+
+class Projectile(pygame.sprite.Sprite):
+    def __init__(self, x, y, target_x, target_y):
+        super().__init__()
+        self.image = pygame.Surface([PROJECTILE_SIZE, PROJECTILE_SIZE])
+        self.image.fill(YELLOW)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        
+        # Calculate direction vector
+        dx = target_x - x
+        dy = target_y - y
+        distance = math.sqrt(dx * dx + dy * dy)
+        self.velocity_x = (dx / distance) * PROJECTILE_SPEED
+        self.velocity_y = (dy / distance) * PROJECTILE_SPEED
+        
+        # Store position as float for precise movement
+        self.float_x = float(x)
+        self.float_y = float(y)
+
+    def update(self):
+        # Update position using float values for smooth movement
+        self.float_x += self.velocity_x
+        self.float_y += self.velocity_y
+        self.rect.x = int(self.float_x)
+        self.rect.y = int(self.float_y)
+        
+        # Remove if out of bounds or hits ground
+        if (self.rect.right < 0 or self.rect.left > WINDOW_WIDTH or 
+            self.rect.bottom < 0 or self.rect.bottom > WINDOW_HEIGHT - 50):
+            self.kill()
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -88,6 +125,7 @@ class Game:
         
         # Create sprite groups
         self.all_sprites = pygame.sprite.Group()
+        self.projectiles = pygame.sprite.Group()
         self.all_sprites.add(self.player)
         self.all_sprites.add(self.gun)
 
@@ -120,7 +158,11 @@ class Game:
     def shoot(self):
         if self.gun.ammo > 0:
             self.gun.ammo -= 1
-            # Add shooting logic here
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            projectile = Projectile(self.gun.rect.centerx, self.gun.rect.centery, 
+                                  mouse_x, mouse_y)
+            self.projectiles.add(projectile)
+            self.all_sprites.add(projectile)
 
     def reload(self):
         self.gun.ammo = self.gun.max_ammo
