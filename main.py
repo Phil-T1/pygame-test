@@ -1,6 +1,7 @@
 import pygame
 import math
 import os
+import random
 
 # Initialize Pygame and its mixer
 pygame.init()
@@ -31,36 +32,20 @@ GRAVITY = 0.8
 PROJECTILE_SPEED = 15
 PROJECTILE_SIZE = 5
 
-# Create pixel art tree surface
+# Load tree images
+TREE_IMAGES = [
+    pygame.image.load(os.path.join("images", "tree-1.png")),
+    pygame.image.load(os.path.join("images", "tree-2.png")),
+    pygame.image.load(os.path.join("images", "tree-3.png"))
+]
+
 def create_tree_sprite():
-    # Create surface for the tree (60x100 pixels)
-    tree = pygame.Surface((60, 100), pygame.SRCALPHA)
-    
-    # Draw trunk (brown rectangle)
-    trunk_width = 20
-    trunk_height = 40
-    trunk_x = (60 - trunk_width) // 2
-    pygame.draw.rect(tree, BROWN, 
-                    (trunk_x, 60, trunk_width, trunk_height))
-    
-    # Draw triangular foliage (3 layers)
-    for i in range(3):
-        width = 50 - i * 10
-        height = 40
-        x = (60 - width) // 2
-        y = i * 25
-        
-        # Create triangle points
-        points = [
-            (x + width//2, y),  # top
-            (x, y + height),    # bottom left
-            (x + width, y + height)  # bottom right
-        ]
-        
-        # Draw triangle with slightly different green for depth
-        color = (TREE_GREEN[0], TREE_GREEN[1] - i * 10, TREE_GREEN[2])
-        pygame.draw.polygon(tree, color, points)
-    
+    # Select a random tree image
+    tree_image = random.choice(TREE_IMAGES)
+
+    # Resize the image to 60x100 pixels
+    tree = pygame.transform.scale(tree_image, (60, 100))
+
     return tree
 
 # Sound effects
