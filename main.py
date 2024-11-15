@@ -28,10 +28,6 @@ GRAVITY = 0.8
 PROJECTILE_SPEED = 15
 PROJECTILE_SIZE = 5
 
-# Create sounds directory if it doesn't exist
-if not os.path.exists('sounds'):
-    os.makedirs('sounds')
-
 # Sound effects
 class GameSounds:
     def __init__(self):
@@ -43,7 +39,19 @@ class GameSounds:
         # Set volume
         self.fire.set_volume(0.3)
         self.reload.set_volume(0.4)
-        self.thump.set_volume(0.4)
+        self.thump.set_volume(1.0)
+    
+    def play_fire(self):
+        self.fire.stop()  # Stop any currently playing fire sound
+        self.fire.play()
+    
+    def play_reload(self):
+        self.reload.stop()  # Stop any currently playing reload sound
+        self.reload.play()
+    
+    def play_thump(self):
+        self.thump.stop()  # Stop any currently playing thump sound
+        self.thump.play()
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, x, y, target_x, target_y, sounds):
@@ -81,7 +89,7 @@ class Projectile(pygame.sprite.Sprite):
         
         # Check for ground collision
         if self.rect.bottom >= WINDOW_HEIGHT - 50 and self.prev_y < WINDOW_HEIGHT - 50:
-            self.sounds.thump.play()
+            self.sounds.play_thump()
             self.kill()
         # Check for other boundaries
         elif (self.rect.right < 0 or self.rect.left > WINDOW_WIDTH or 
@@ -196,11 +204,11 @@ class Game:
                                   mouse_x, mouse_y, self.sounds)
             self.projectiles.add(projectile)
             self.all_sprites.add(projectile)
-            self.sounds.fire.play()
+            self.sounds.play_fire()
 
     def reload(self):
         self.gun.ammo = self.gun.max_ammo
-        self.sounds.reload.play()
+        self.sounds.play_reload()
 
     def update(self):
         keys = pygame.key.get_pressed()
