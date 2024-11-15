@@ -16,6 +16,9 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
+BROWN = (101, 67, 33)
+DARK_GREEN = (1, 68, 33)
+TREE_GREEN = (1, 88, 33)
 
 # Player settings
 PLAYER_WIDTH = 50
@@ -28,6 +31,38 @@ GRAVITY = 0.8
 PROJECTILE_SPEED = 15
 PROJECTILE_SIZE = 5
 
+# Create pixel art tree surface
+def create_tree_sprite():
+    # Create surface for the tree (60x100 pixels)
+    tree = pygame.Surface((60, 100), pygame.SRCALPHA)
+    
+    # Draw trunk (brown rectangle)
+    trunk_width = 20
+    trunk_height = 40
+    trunk_x = (60 - trunk_width) // 2
+    pygame.draw.rect(tree, BROWN, 
+                    (trunk_x, 60, trunk_width, trunk_height))
+    
+    # Draw triangular foliage (3 layers)
+    for i in range(3):
+        width = 50 - i * 10
+        height = 40
+        x = (60 - width) // 2
+        y = i * 25
+        
+        # Create triangle points
+        points = [
+            (x + width//2, y),  # top
+            (x, y + height),    # bottom left
+            (x + width, y + height)  # bottom right
+        ]
+        
+        # Draw triangle with slightly different green for depth
+        color = (TREE_GREEN[0], TREE_GREEN[1] - i * 10, TREE_GREEN[2])
+        pygame.draw.polygon(tree, color, points)
+    
+    return tree
+
 # Sound effects
 class GameSounds:
     def __init__(self):
@@ -39,7 +74,7 @@ class GameSounds:
         # Set volume
         self.fire.set_volume(0.3)
         self.reload.set_volume(0.4)
-        self.thump.set_volume(1.0)
+        self.thump.set_volume(0.4)
     
     def play_fire(self):
         self.fire.stop()  # Stop any currently playing fire sound
@@ -84,12 +119,19 @@ class Projectile(pygame.sprite.Sprite):
         # Update position using float values for smooth movement
         self.float_x += self.velocity_x
         self.float_y += self.velocity_y
+        
+        # Store old position for collision check
+        old_bottom = self.rect.bottom
+        
+        # Update rect position
         self.rect.x = int(self.float_x)
         self.rect.y = int(self.float_y)
         
         # Check for ground collision
-        if self.rect.bottom >= WINDOW_HEIGHT - 50 and self.prev_y < WINDOW_HEIGHT - 50:
-            self.sounds.play_thump()
+        if self.rect.bottom >= WINDOW_HEIGHT - 50:
+            # Only play sound if we just hit the ground this frame
+            if old_bottom < WINDOW_HEIGHT - 50:
+                self.sounds.play_thump()
             self.kill()
         # Check for other boundaries
         elif (self.rect.right < 0 or self.rect.left > WINDOW_WIDTH or 
@@ -156,6 +198,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.background_x = 0
+        
+        # Create tree sprite
+        self.tree_sprite = create_tree_sprite()
         
         # Initialize sounds
         self.sounds = GameSounds()
@@ -244,11 +289,10 @@ class Game:
         pygame.draw.rect(self.screen, ground_color, 
                         (0, WINDOW_HEIGHT - 50, WINDOW_WIDTH, 50))
 
-        # Draw background elements that scroll
+        # Draw scrolling trees in background
         for i in range(-1, WINDOW_WIDTH // 100 + 2):
             x_pos = (i * 100 + self.background_x) % WINDOW_WIDTH
-            pygame.draw.rect(self.screen, (70, 40, 0), 
-                           (x_pos, WINDOW_HEIGHT - 150, 30, 100))
+            self.screen.blit(self.tree_sprite, (x_pos, WINDOW_HEIGHT - 150))
 
         self.all_sprites.draw(self.screen)
 
