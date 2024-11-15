@@ -11,6 +11,8 @@ pygame.mixer.init()
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 FPS = 60
+GROUND_HEIGHT = 25  # Add ground height constant
+GROUND_MARGIN = 50  # Add ground margin constant
 
 # Colors
 BLACK = (0, 0, 0)
@@ -94,9 +96,9 @@ class Projectile(pygame.sprite.Sprite):
         self.rect.y = int(self.float_y)
         
         # Check for ground collision
-        if self.rect.bottom >= WINDOW_HEIGHT - 50:
+        if self.rect.bottom >= WINDOW_HEIGHT - GROUND_HEIGHT:
             # Only play sound if we just hit the ground this frame
-            if old_bottom < WINDOW_HEIGHT - 50:
+            if old_bottom < WINDOW_HEIGHT - GROUND_HEIGHT:
                 self.sounds.play_thump()
             self.kill()
         # Check for other boundaries
@@ -123,8 +125,8 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += self.velocity_y
 
         # Ground collision
-        if self.rect.bottom > WINDOW_HEIGHT - 50:  # Ground level
-            self.rect.bottom = WINDOW_HEIGHT - 50
+        if self.rect.bottom > WINDOW_HEIGHT - GROUND_HEIGHT:  # Ground level
+            self.rect.bottom = WINDOW_HEIGHT - GROUND_HEIGHT
             self.velocity_y = 0
             self.is_jumping = False
 
@@ -190,7 +192,7 @@ class Game:
         self.sounds = GameSounds()
 
         # Create sprites
-        self.player = Player(WINDOW_WIDTH // 4, WINDOW_HEIGHT - 80)
+        self.player = Player(WINDOW_WIDTH // 4, WINDOW_HEIGHT - GROUND_HEIGHT - PLAYER_HEIGHT)
         self.gun = Gun()
         
         # Create sprite groups
@@ -296,7 +298,7 @@ class Game:
         # Draw scrolling ground
         ground_color = (50, 150, 50)  # Green ground
         pygame.draw.rect(self.screen, ground_color, 
-                        (0, WINDOW_HEIGHT - 55, WINDOW_WIDTH, 50))
+                        (0, WINDOW_HEIGHT - GROUND_HEIGHT - GROUND_MARGIN, WINDOW_WIDTH, GROUND_HEIGHT + GROUND_MARGIN))
 
         # Draw trees with different variants
         for tree in self.tree_positions:
